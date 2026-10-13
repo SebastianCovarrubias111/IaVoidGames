@@ -71,11 +71,34 @@ function play2(S,n,t,sp){const i=n%16,b=((n/16)|0)%8,L=S.l[b][i],ch=S.c[b],r=S.r
  if(S.k.includes(i))kick(t);
  if(i===4||i===12)noise(t,.1,.1,1800,'bandpass');
  if(S.f||i%2===0)noise(t,.03,S.f?.035:.045,7000,'highpass')}
+/* 10 CANCIONES: una mazmorra y un jefe por piso */
+const mk=o=>{const sn=d=>o.key+o.sc[((d%7)+7)%7]+12*Math.floor(d/7),l=[],c=[],r=[];
+ for(let b=0;b<8;b++){const m=b<4?o.A:o.B,p=o.p[b];l.push([...m].map(x=>x==='.'?0:sn(+x+p)));c.push([sn(p),sn(p+2),sn(p+4)]);r.push(sn(p)-12)}
+ return{...o,l,c,r}};
+const MI=[0,2,3,5,7,8,10],DO=[0,2,3,5,7,9,10],PH=[0,1,3,5,7,8,10],HM=[0,2,3,5,7,8,11];
+SG.d1=SG.d;
+SG.d2=mk({bpm:128,ld:1.8,key:50,sc:DO,p:[0,0,3,4,0,3,4,0],k:[0,3,8,11],A:'7.79.7.4.6.5.4..',B:'9.8.7.6.7..9..8.'});
+SG.d3=mk({bpm:138,ld:1.8,key:52,sc:PH,p:[0,1,0,4,0,1,3,0],k:[0,4,6,8,12],A:'7.8.7.4.5.4..2..',B:'9.7.9.8.7.5.4.7.'});
+SG.d4=mk({bpm:146,ld:1.6,key:48,sc:HM,p:[0,5,3,4,0,5,4,0],k:[0,6,8,10,14],A:'77.8.77.5.3.5.7.',B:'9.8.7.8.9.7.5.7.'});
+SG.d5=mk({bpm:150,ld:1.8,key:47,sc:MI,p:[0,5,3,6,0,5,6,4],k:[0,4,8,12],A:'7.7.7.9.8.7.4.5.',B:'9.9.8.9.7.8.5.7.'});
+const BO={ld:5,ec:4,du:.125,lv:.08,k:[0,8],sn:[12],h:4,bp:[0,8],bl:7,as:2};
+SG.b1=mk({...BO,bpm:96,key:57,sc:MI,p:[0,5,6,4,0,5,6,4],A:'7...7.6...5...4.',B:'9...8...7...6.7.'});
+SG.b2=mk({...BO,bpm:100,key:50,sc:PH,p:[0,1,0,4,0,1,3,4],A:'7.....8...7...5.',B:'9...8.7.8...9...'});
+SG.b3=mk({...BO,bpm:108,key:52,sc:MI,p:[0,3,4,0,5,3,4,0],A:'7.7...9.8...7...',B:'9.8.7...5.7.8...'});
+SG.b4=mk({...BO,bpm:112,key:55,sc:HM,p:[0,5,3,4,0,5,4,0],A:'7...8...9..8.7..',B:'9.9.8.8.7.7.8...'});
+SG.b5=mk({...BO,bpm:118,key:46,sc:MI,p:[0,5,3,6,0,5,6,4],A:'7.7.7.8.9...8.7.',B:'9.9.9.8.7.8.9.9.'});
+function play3(S,n,t,sp){const i=n%16,b=((n/16)|0)%8,L=S.l[b][i],ch=S.c[b],r=S.r[b];
+ if(L){note2(L,t,sp*S.ld,S.du||.25,S.lv||.07);note2(L,t+sp*(S.ec||3),sp*S.ld,.125,.02)}
+ if(i%(S.as||1)===0)note2(ch[i%3]+12,t,sp*.7,.125,.02);
+ if((S.bp||[0,2,4,6,8,10,12,14]).includes(i))note(r+(S.bp?0:(i%8===6?7:i%4===2?12:0)),t,sp*(S.bl||1.7),'triangle',.15);
+ if(S.k.includes(i))kick(t);
+ if((S.sn||[4,12]).includes(i))noise(t,.1,.1,1800,'bandpass');
+ if(i%(S.h||2)===0)noise(t,.03,.04,7000,'highpass')}
 function sched(){
  if(!ac||ac.state!=='running'||over)return;
- const S=SG[song],sp=60/(S.bpm+(song==='b'?floor*4:0))/4;
+ const S=SG[song],bo=en.find(e=>e.type==='boss'),sp=60/(S.bpm*(bo&&bo.hp<bo.max/2?1.15:1))/4;
  if(nextT<ac.currentTime-.3)nextT=ac.currentTime+.05;
- while(nextT<ac.currentTime+.15){play2(S,stepN,nextT,sp);stepN++;nextT+=sp}}
+ while(nextT<ac.currentTime+.15){play3(S,stepN,nextT,sp);stepN++;nextT+=sp}}
 setInterval(sched,40);
 const sfx={shoot:()=>beep(700,.08,'square',.05,300),hit:()=>beep(180,.1,'square',.08,80),hurt:()=>beep(120,.25,'sawtooth',.1,50),
 pick:()=>{beep(660,.08);setTimeout(()=>beep(880,.12),80)},lvl:()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.15,'triangle',.1),i*90)),
@@ -146,7 +169,7 @@ function newFloor(n,bs){
   if(Math.random()<.5)chests.push({x:r.cx*T+30,y:r.cy*T+30,open:false,gold:Math.random()<.35});
   if(i===1)items.push({x:r.cx*T-30,y:r.cy*T,type:'key',b:0})});
  if(bs){const a=rooms[0],b=Enemy(a.cx*T,(a.y+4)*T,'boss',1);b.max=b.hp=[0,200,260,400,550,750][n];b.dmg=10+n*2;b.r=34+n*2;b.sp=1.1+n*.12;en.push(b)}
- banner(bs?'* PISO '+n+' · '+BN[n]+' TE ESPERA...':'* PISO '+n+' · MAZMORRA',170);sfx.stairs();setSong(bs?'b':'d');
+ banner(bs?'* PISO '+n+' · '+BN[n]+' TE ESPERA...':'* PISO '+n+' · MAZMORRA',170);sfx.stairs();setSong(bs?'b'+n:'d'+n);
 }
 let ban={t:'',n:0};function banner(t,n){ban={t,n}}
 function text(x,y,t,c){ft.push({x,y,t,c,a:1})}
